@@ -14,3 +14,27 @@ export interface Movie {
   vote_average: number;
   vote_count: number;
 }
+
+export interface MovieDetail extends Movie {
+  genres: { id: number; name: string }[];
+  runtime: number;
+  tagline?: string;
+}
+
+export interface Cast {
+  id: number;
+  name: string;
+  profile_path: string;
+  character: string;
+}
+
+export interface Crew {
+  id: number;
+  name: string;
+  job: string;
+}
+
+export interface Credits {
+  cast: Cast[];
+  crew: Crew[];
+}
