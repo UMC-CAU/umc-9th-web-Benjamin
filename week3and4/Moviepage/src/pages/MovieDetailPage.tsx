@@ -1,58 +1,20 @@
-import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import type { MovieDetail, Credits } from '../movie-type';
 import LoadingSpinner from '../components/LoadingSpinner';
-
-const API_KEY = import.meta.env.VITE_API_KEY;
-const BASE_URL = 'https://api.themoviedb.org/3';
+import { useCustomFetch } from '../hooks/useCustomFetch';
 
 export default function MovieDetailPage() {
   const { movieId } = useParams<{ movieId: string }>();
-  const [movie, setMovie] = useState<MovieDetail | null>(null);
-  const [credits, setCredits] = useState<Credits | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!movieId) return;
+  const { data: movie, isLoading: isMovieLoading, error: movieError } = useCustomFetch<MovieDetail>(
+    movieId ? `/movie/${movieId}` : null
+  );
+  const { data: credits, isLoading: isCreditsLoading, error: creditsError } = useCustomFetch<Credits>(
+    movieId ? `/movie/${movieId}/credits` : null
+  );
 
-    const fetchMovieData = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const movieResponse = fetch(`${BASE_URL}/movie/${movieId}?language=ko-KR`, {
-          headers: {
-            Authorization: `Bearer ${API_KEY}`,
-          },
-        });
-
-        const creditsResponse = fetch(`${BASE_URL}/movie/${movieId}/credits?language=ko-KR`, {
-          headers: {
-            Authorization: `Bearer ${API_KEY}`,
-          },
-        });
-
-        const [movieRes, creditsRes] = await Promise.all([movieResponse, creditsResponse]);
-
-        if (!movieRes.ok || !creditsRes.ok) {
-          throw new Error('네트워크 응답이 올바르지 않습니다.');
-        }
-
-        const movieData = await movieRes.json();
-        const creditsData = await creditsRes.json();
-
-        setMovie(movieData);
-        setCredits(creditsData);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : '알 수 없는 에러가 발생했습니다.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchMovieData();
-  }, [movieId]);
+  const isLoading = isMovieLoading || isCreditsLoading;
+  const error = movieError || creditsError;
 
   const posterBaseUrl = 'https://image.tmdb.org/t/p/';
 

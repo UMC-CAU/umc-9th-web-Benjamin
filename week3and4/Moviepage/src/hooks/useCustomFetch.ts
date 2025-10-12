@@ -1,37 +1,44 @@
 import { useState, useEffect } from 'react';
-import type { Movie } from '../movie-type';
 
 const API_KEY = import.meta.env.VITE_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
 
-interface MovieApiResponse {
-  results: Movie[];
-  total_pages: number;
+interface FetchOptions {
+  params?: Record<string, string | number>;
 }
 
-export function useMovies(endpoint: string) {
-  const [movies, setMovies] = useState<Movie[]>([]);
+export function useCustomFetch<T>(endpoint: string | null, options?: FetchOptions) {
+  const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    const fetchMovies = async () => {
+    if (!endpoint) {
+      return;
+    }
+
+    const fetchData = async () => {
       setIsLoading(true);
       setError(null);
+
       try {
-        const response = await fetch(`${BASE_URL}${endpoint}?language=ko-KR&page=${page}`, {
+        const queryParams = new URLSearchParams({
+          language: 'ko-KR',
+          ...options?.params,
+        }).toString();
+        
+        const response = await fetch(`${BASE_URL}${endpoint}?${queryParams}`, {
           headers: {
             Authorization: `Bearer ${API_KEY}`,
           },
         });
+
         if (!response.ok) {
           throw new Error('네트워크 응답이 올바르지 않습니다.');
         }
-        const data: MovieApiResponse = await response.json();
-        setMovies(data.results);
-        setTotalPages(data.total_pages);
+
+        const result = await response.json();
+        setData(result);
       } catch (err) {
         setError(err instanceof Error ? err.message : '알 수 없는 에러가 발생했습니다.');
       } finally {
@@ -39,10 +46,8 @@ export function useMovies(endpoint: string) {
       }
     };
 
-    if (endpoint) {
-      fetchMovies();
-    }
-  }, [endpoint, page]);
+    fetchData();
+  }, [endpoint, JSON.stringify(options?.params)]);
 
-  return { movies, isLoading, error, page, totalPages, setPage };
+  return { data, isLoading, error };
 }
