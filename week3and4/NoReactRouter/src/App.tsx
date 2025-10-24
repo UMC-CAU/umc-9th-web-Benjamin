@@ -1,6 +1,50 @@
 import { useState, useEffect } from 'react';
 import './App.css';
 
+// MoviePage component
+function MoviePage() {
+  const [movies, setMovies] = useState([]);
+  const apiKey = import.meta.env.VITE_API_KEY;
+
+  useEffect(() => {
+    const fetchMovies = async () => {
+      try {
+        const response = await fetch(`https://api.themoviedb.org/3/movie/popular?language=en-US&page=1`, {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            accept: 'application/json'
+          }
+        });
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        console.log(data.results); 
+        setMovies(data.results);
+      } catch (error) {
+        console.error('Failed to fetch movies:', error);
+      }
+    };
+
+    fetchMovies();
+  }, [apiKey]);
+
+  return (
+    <div>
+      <h2>인기 영화</h2>
+      <ul className="movie-grid">
+        {movies.map((movie: any) => (
+          <li key={movie.id}>
+            <img src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`} alt={movie.title} />
+            <h3>{movie.title}</h3>
+            <p>{movie.overview}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function App() {
   const [path, setPath] = useState(window.location.pathname);
 
@@ -28,26 +72,8 @@ function App() {
         <p>안녕하세요. React Router 없이 만든 웹입니다.</p>
       </div>
     );
-  } else if (path.startsWith('/list')) {
-    const currentPage = parseInt(path.split('/')[2] || '1', 10); //URL 경로를 '/'로 분할하여 페이지 번호를 추출
-    const items = Array.from({ length: 10 }, (_, i) => `아이템 ${i + 1}`); // 10개의 아이템 생성
-    const itemsPerPage = 1;
-    const totalPages = Math.ceil(items.length / itemsPerPage);
-    const currentItems = items.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-    content = (
-      <div>
-        <h2>리스트 페이지</h2>
-        <ul>
-          {currentItems.map(item => <li key={item}>{item}</li>)}
-        </ul>
-        <div className="pagination">
-          <button onClick={() => navigate(`/list/${currentPage - 1}`)} disabled={currentPage <= 1}>이전</button>
-          <span>{currentPage} / {totalPages}</span>
-          <button onClick={() => navigate(`/list/${currentPage + 1}`)} disabled={currentPage >= totalPages}>다음</button>
-        </div>
-      </div>
-    );
+  } else if (path === '/movies') {
+    content = <MoviePage />;
   } else {
     content = (
       <div>
@@ -62,7 +88,7 @@ function App() {
       <header>
         <nav>
           <a href="/" onClick={(e) => handleLinkClick(e, '/')}>홈</a>
-          <a href="/list" onClick={(e) => handleLinkClick(e, '/list')}>리스트</a>
+          <a href="/movies" onClick={(e) => handleLinkClick(e, '/movies')}>인기 영화 리스트</a>
         </nav>
       </header>
       <main>{content}</main>
